@@ -1,7 +1,7 @@
 ---
-name: lovense-toys
-display-name: Lovense Toys
-description: Use the Lovense MCP tools to control Lovense toys (functions incl. multi-motor control, patterns, presets, stop, list connected toys, check battery, look up per-toy operating manuals via ToyHelp) when the user asks about their toys.
+name: VibeMCP
+display-name: VibeMCP
+description: Use the VibeMCP tools to control Lovense toys (functions incl. multi-motor control, patterns, presets, stop, list connected toys, check battery, look up per-toy operating manuals via ToyHelp) when the user asks about their toys.
 ---
 
 # Controlling Lovense Toys (MCP Server "VibeMCP")
