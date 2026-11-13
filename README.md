@@ -1,117 +1,112 @@
 # VibeMCP
 
-An MCP server for controlling Lovense toys via Game Mode — built for LM Studio.
+An MCP server for **LM Studio** that controls Lovense toys over your local network – no cloud involved. The connection runs through the **Game Mode "Server"** of the Lovense Remote app on your smartphone:
 
-VibeMCP connects your AI agent to your Lovense toys through the official Lovense Remote app's Game Mode API (Standard Solutions). The agent can list connected toys, check battery levels, control vibration and other functions per actuator, play patterns and presets, listen for live toy events — and read a built-in manual for each supported model.
+```text
+LM Studio (AI agent)  ←MCP/stdio→  VibeMCP.py   ←HTTP(S)/LAN→  Game-Mode server (smartphone)  ←Bluetooth→  toys
+```
 
-> **Note:** VibeMCP is an independent hobby project and is not affiliated with or endorsed by Lovense. "Lovense" and the product names are trademarks of their respective owners. This project builds on the original Game Mode MCP server published by Lovense (see [Credits](#credits)).
-
-## Features
-
-- **ListToys** – all connected toys: name, ID, battery, status, supported functions
-- **GetBattery** – battery level per toy (or all at once)
-- **SendFunction** – control any function (Vibrate, Thrusting, Fingering, …), including independent multi-motor control via `Vibrate1`/`Vibrate2`, with parallel or sequential execution (`stopPrevious`)
-- **StopToy** – stop a toy (or all toys)
-- **SendPattern** – custom vibration patterns (up to 50 strength values, configurable interval and duration)
-- **SendPreset** – built-in Lovense presets: pulse, wave, fireworks, earthquake
-- **ListenEvents** – live event channel (button presses, strength changes, …), with filters, timeout mode (`stopOnFirstMatch`) and automatic state restore (`keepState`)
-- **ToyHelp** – built-in operating manuals for supported models (function names, motor mapping, intensity scales, notes)
+> Built using the public Lovense developer documentation; compatible with Lovense devices. Not affiliated with or endorsed by Lovense.
 
 ## Requirements
 
-- Windows 10/11 (Linux/macOS: run the Python command manually — see [Manual start](#manual-start))
-- Python 3.10+ on PATH
-- The **Lovense Remote app** with Game Mode running on your phone
-- At least one Lovense toy connected to Game Mode
+- **Python 3.10 or newer** (Windows, Linux or macOS)
+- The **Lovense Remote app** on your smartphone with *Game Mode → Server* enabled
+- Smartphone and PC on the **same LAN**
+- The **IP address of the smartphone** in the LAN (shown in the Lovense app under Game Mode)
 
-## Quick Start
+## Installation (Windows)
 
-### 1. One-time setup
-
-Double-click `setup.cmd` (or run it in a terminal). It creates the virtual environment and installs all dependencies:
-
-```
-[1/3] Creating virtual environment...
-[2/3] Installing dependencies (requirements.txt)...
-[3/3] Setup complete!
-```
-
-### 2. Configure IP & port
-
-Open `run.cmd` and set the two variables at the top:
-
-| Variable | What to enter | Where to find it |
-|---|---|---|
-| `GAME_MODE_IP` | The phone's IP address on your network | Phone settings → Wi-Fi, or the Lovense Remote app (Game Mode section) |
-| `GAME_MODE_PORT` | The Game Mode port | Shown in the Lovense Remote app — default is **30010** |
-
-### 3. Add to LM Studio
-
-In LM Studio: **Settings → MCP Servers → Add**, then point it at this folder:
-
-- **Command:** `<path-to-this-folder>\run.cmd`
-- Example: `D:\AI\MCP_Server\VibeMCP\run.cmd`
-
-LM Studio starts the server itself — no manual start needed. Restart LM Studio (or reload MCP) if the tools don't appear.
-
-### 4. Test it
-
-Ask your agent something like: *"List my connected toys"* or *"Vibrate the Hush at intensity 5 for 3 seconds."*
-
-## Using multiple identical toys
-
-Toy IDs are **device-individual** — every physical toy has its own unique ID (stored in firmware, stable). If you connect several toys of the same model, they all report the same name. To keep things unambiguous:
-
-1. Give each toy a **descriptive nickname** in the Lovense Remote app (long-press the toy → rename), e.g.:
-   - Multiple people playing: `Hush Anna`, `Hush Ben` — so it's clear which person wears which toy
-   - One person, multiple toys: `Hush anal`, `Hush vaginal` — so it's clear where each one is
-2. The agent will then prefer the nickname when addressing a specific toy; if two toys still can't be told apart, it will ask you and address them by ID from that point on.
-
-## Manual start (without LM Studio)
+### 1. Clone the repository
 
 ```bat
-venv\Scripts\python VibeMCP.py GAME_MODE_IP=192.168.178.45 GAME_MODE_PORT=30010
+git clone https://github.com/DJBeatstar/VibeMCP.git
+cd VibeMCP
 ```
 
-The server speaks MCP over stdio — it is meant to be started by an MCP client (like LM Studio), not used interactively.
+### 2. Run the setup
 
-## Project structure
+Double-click **`setup.cmd`** (or run `cmd /c setup.cmd` in a console). The script:
 
-```
-VibeMCP/
-├── VibeMCP.py      # MCP server: tools, config, argument handling
-├── ToyAPI.py       # Game Mode API layer: commands, toy resolution, patterns, events
-├── manuals.json    # Built-in toy manuals (ToyHelp) — add your toys here
-├── requirements.txt
-├── setup.cmd       # One-time setup (venv + dependencies)
-└── run.cmd         # Start script for LM Studio (IP/port configured here)
-```
+1. checks that Python 3.10 or newer is installed,
+2. creates the virtual environment (`venv`) – skipped if it already exists,
+3. installs the dependencies from `requirements.txt`,
+4. asks for the **IP address and port** of the Game Mode (Enter keeps the previous/default value) and writes them to `game_mode.txt`.
 
-## Adding a new toy to the manuals
+At the end the setup offers to start the server directly – otherwise simply run **`run.cmd`** afterwards.
 
-`manuals.json` is read fresh on every `ToyHelp` call — no restart needed. Add an entry under `"toys"`:
+### 3. Configure LM Studio
 
-```json
-"mytoy": {
-  "type": "what it is",
-  "functions": {"Vibrate": "0-20, what it does"},
-  "notes": ["anything the agent should know"]
-}
-```
+In LM Studio's MCP settings, create a new server:
+
+- **Name:** e.g. `VibeMCP`
+- **Command:** full path to `run.cmd`, e.g. `C:\path\to\VibeMCP\run.cmd`
+
+No extra arguments needed – the script reads IP and port from `game_mode.txt`. Then connect the server; the tools (`ListToys`, `SendFunction`, …) should appear in the MCP tool list.
+
+> **Linux/macOS:** Instead of `run.cmd`, simply enter the equivalent command, e.g.
+> `venv/bin/python VibeMCP.py GAME_MODE_IP=<ip> GAME_MODE_PORT=30010`.
+
+### 4 (optional). Install the skill for the AI agent
+
+The [`SKILL.md`](SKILL.md) file in the repository root teaches the agent how to use the tools correctly (parameter rules, multi-motor control, addressing multiple identical toys, event handling). The tools work without the skill – but the skill makes the agent significantly more reliable.
+
+Installation: install via the skill management in LM Studio/Bionic.
+
+## Available Tools
+
+| Tool | Purpose |
+|---|---|
+| `ListToys()` | All connected toys: name, ID, battery, status, functions |
+| `ToyHelp(toy?)` | Operating manual of a toy (function names, motor assignment, scales) |
+| `GetBattery(toy?)` | Battery level of one or all toys |
+| `SendFunction(...)` | Control a function: vibration, thrusting, individual motors – also in parallel & changeable live |
+| `SendPattern(...)` | Repeating vibration pattern (sequence + tempo) |
+| `SendPreset(name, ...)` | Firmware patterns: `pulse`, `wave`, `fireworks`, `earthquake` |
+| `StopToy(toy?)` | Stop the running action |
+| `ListenEvents(...)` | Listen for live events from a toy (e.g. button press as trigger) |
+
+Details and parameter rules: [`SKILL.md`](SKILL.md).
+
+## Multiple identical toys
+
+If you own several identical toys (e.g. two Hush), it is best to assign **descriptive nicknames** directly in the Lovense app – e.g. `Hush anal` / `Hush vaginal`, or, with multiple people, the name of the wearer (`Hush Anna`). The agent recognizes the nicknames automatically and can then address each toy individually without asking; this keeps it clear at all times which toy is where and whose it is.
+
+Without a nickname, the agent asks when there is ambiguity and addresses the toy by ID – that works reliably as well (the IDs are provided by `ListToys()`).
+
+## Adding new toys / extending manuals
+
+The single data source is `manuals.json`: simply add a new toy object following the same pattern (type, functions with effect + scale, notes).
+Toy-specific safety notes (if ever needed) belong in the `notes` of the respective toy object – not in SKILL.md. The server reloads the file from disk on every `ToyHelp()` call – **no restart** required. Toy IDs do not belong there: they are device-specific firmware values and are delivered live by `ListToys()`.
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
+| Symptom | Cause / solution |
 |---|---|
-| `Game Mode not reachable` | Game Mode not running on the phone, wrong IP/port in `run.cmd`, or phone and PC on different networks (Wi-Fi vs. mobile data) |
-| `HTTP 401` from a command | The toy rejected it — check function names via `ToyHelp`; some functions don't exist on every model |
-| No events from `ListenEvents` | Some toys don't send events at all (firmware limitation, e.g. Gush). Vulse does. |
-| Tools missing in LM Studio | Reload MCP servers / restart LM Studio; check that the command path points to `run.cmd` |
+| `run.cmd` reports "ERROR: game_mode.txt was not found." | Setup has not been run yet – start `setup.cmd` |
+| Server does not start: "Required MCP configuration parameters are missing" | `GAME_MODE_IP`/`GAME_MODE_PORT` missing or malformed in `game_mode.txt` (format: `KEY=VALUE`) – re-run `setup.cmd` |
+| Connection errors / timeouts on tool calls | Is the Game Mode "Server" not running in the app? Smartphone on the same LAN? IP address correct (it can change!)? |
+| `code=401` / "rejected" | Unknown toy or wrong ID – check with `ListToys()` what is connected |
 
-## Credits & license
+## Project structure
 
-- Built on the original **Lovense Game Mode MCP server** published by Lovense (developer.lovense.com) — thank you!
-- API reference: [Lovense Standard Solutions](https://developer.lovense.com/docs/standard-solutions/standard-api.html)
-- Developed with AI assistance: Qwen3.8 27B, running on LM Studio Bionic (AI Assisted Coding)
+```text
+VibeMCP/
+├── VibeMCP.py            # MCP server (tools)
+├── ToyAPI.py             # HTTP connection to the Game-Mode server
+├── manuals.json          # Single data source: manuals for ToyHelp()
+├── requirements.txt      # Python dependencies
+├── setup.cmd             # One-time setup: venv, packages, IP/port prompt
+├── game_mode.txt         # Configuration (IP/port), created by setup.cmd
+├── run.cmd               # Start script (reads IP/port from game_mode.txt)
+└── SKILL.md              # Skill file for AI agents
+```
 
-Licensed under the [MIT License](LICENSE). Copyright DJBeatstar.
+## License
+
+This project is licensed under the MIT License – see [LICENSE](LICENSE).
+
+## Developers
+
+- **DJBeatstar**
+- Qwen3.8 27B, running on LM Studio Bionic (AI Assisted Coding)

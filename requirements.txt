@@ -1,3 +1,6 @@
-mcp>=1.0.0
+# mcp 1.x API (FastMCP). Keep <2: in mcp 2.x FastMCP was renamed to MCPServer.
+# >=1.30 is required for compatibility with recent Pydantic versions.
+mcp>=1.30,<2
 requests>=2.31.0
+# WebSocket client for the Toy Events API (ListenEvents tool)
 websockets>=12.0

@@ -1,0 +1,98 @@
+{
+  "_note": "Per-toy operating manuals for the VibeMCP server (tool: ToyHelp) - the SINGLE data source of the server. The server reloads this file from disk on EVERY call - new toys/manuals can be added without restarting the server. Structure per toy: type, functions (effect + scale), notes. All information verified on real hardware. NOTE: Toy IDs are NOT stored here - they are device-specific firmware values delivered live by GetToys/ListToys.",
+  "general": {
+    "intensity": "Intensity scale is typically 0-20 (0 = off, 10 = half strength, 20 = full power); pump functions only 0-3. The exact scale per function is listed in the respective toy manual.",
+    "duration": "durationSec=0 means 'runs until stopped' - use deliberately and tell the user! Finite durations are enforced by the toy ITSELF and it stops on its own - no stop command needed.",
+    "stopping": "Stop a single function: send intensity 0 for exactly that function (other functions of the same toy keep running). Stop the whole toy: StopToy. Do NOT reflexively call StopToy after finite vibrations - it would interrupt the vibration still running.",
+    "parallel_operation": "stopPrevious=False (default): new function runs IN PARALLEL with already-running functions of the same toy. stopPrevious=True: previously running functions are stopped first. Control multiple actuators independently = send one separate call per function.",
+    "motor_numbering": "Actuator numbering (Vibrate1, Vibrate2, ...) is TOY-SPECIFIC - numbered actuators can drive different ends on similar toys. The 'functions' section of each toy's manual is the source of truth; never assume a mapping from another toy.",
+    "live_changes": "The intensity of a running function can be changed live - a new command for the same function updates it without interruption.",
+    "strength_limit": "The 'strengths' limit reported by GetToys (e.g. {\"v\": 100}) is the limitation configured in the Lovense app, in PERCENT - not a native maximum of the toy; it follows the app setting live. The command scale always stays 0-20. The limit is applied PROPORTIONALLY on the toy side - all levels are scaled down, not only those above the limit. The MCP server does not cap anything and passes the requested intensity through unchanged.",
+    "patterns": "Patterns (SendPattern) always affect ALL motors of the toy - the Lovense Remote API has no per-motor targeting in pattern mode: the F: field of the pattern command only accepts function types, not motor indices; undocumented values fall back firmware-side to 'all functions'. This is a limitation of the Lovense Remote API itself, not of toy firmware - assume it applies to all toys. For per-motor effects: SendFunction with Vibrate1/Vibrate2."
+  },
+  "toys": {
+    "vulse": {
+      "type": "Small single-motor vibrator (bullet shape)",
+      "functions": {
+        "Vibrate": { "effect": "The toy's only vibration module", "scale": [0, 20] }
+      },
+      "notes": [
+        "Sends WebSocket events (e.g. button-pressed) - ListenEvents(toy='vulse') works.",
+        "A button press on the toy ADDITIONALLY starts local vibration - with keepState=true the server immediately restores the previous state."
+      ]
+    },
+    "gush": {
+      "type": "Vibrating penis ring (single motor)",
+      "functions": {
+        "Vibrate": { "effect": "The toy's only vibration module", "scale": [0, 20] }
+      },
+      "notes": [
+        "Sends NO WebSocket events - ListenEvents(toy='gush') never returns anything. Fully controllable via /command."
+      ]
+    },
+    "dolce": {
+      "type": "Curved dual vibrator for women with adjustable neck - one end is inserted, the other rests externally on the clitoris (product page: de.lovense.com/adjustable-dual-clit-gspot-vibrator)",
+      "functions": {
+        "Vibrate": { "effect": "BOTH motors simultaneously", "scale": [0, 20] },
+        "Vibrate1": { "effect": "Only the OUTER end (clitoris)", "scale": [0, 20] },
+        "Vibrate2": { "effect": "Only the INNER end (G-spot)", "scale": [0, 20] }
+      },
+      "notes": [
+        "GetToys only reports 'v', but Vibrate1/Vibrate2 work anyway (hidden functions)."
+      ]
+    },
+    "edge": {
+      "type": "Dual vibrator for men and women (product page: de.lovense.com)",
+      "functions": {
+        "Vibrate": { "effect": "Both motors simultaneously", "scale": [0, 20] },
+        "Vibrate1": { "effect": "Only the INNER end (insertion part)", "scale": [0, 20] },
+        "Vibrate2": { "effect": "Only the OUTER end (perineum)", "scale": [0, 20] }
+      },
+      "notes": [
+        "GetToys only reports 'v', but Vibrate1/Vibrate2 work anyway (hidden functions)."
+      ]
+    },
+    "gravity": {
+      "type": "Dildo with thrusting function and vibrating tip, stand base included (product page: de.lovense.com/thrusting-vibrating-dildo)",
+      "functions": {
+        "Vibrate": { "effect": "Only the VIBRATING TIP", "scale": [0, 20] },
+        "Thrusting": { "effect": "Thrusting motion of the shaft (without tip vibration)", "scale": [0, 20] }
+      },
+      "notes": [
+        "Both functions independently controllable - parallel operation and live intensity changes without interruption.",
+        "GetToys reports both functions correctly ('v' + 't')."
+      ]
+    },
+    "flexer": {
+      "type": "Wearable panty vibrator with vibration and bending function (product page: de.lovense.com/dual-wearable-panty-vibrator)",
+      "functions": {
+        "Vibrate": { "effect": "Vibration module", "scale": [0, 20] },
+        "Fingering": { "effect": "Bending function - simulates fingering (no vibration motor)", "scale": [0, 20] }
+      },
+      "notes": [
+        "Both functions independently controllable; replacement (stopPrevious=True) AND parallel operation (stopPrevious=False)."
+      ]
+    },
+    "hush": {
+      "type": "Single-motor vibrating butt plug",
+      "functions": {
+        "Vibrate": { "effect": "Vibration module", "scale": [0, 20] }
+      },
+      "notes": [
+        "Hush comes in sizes XS/S/M/L - the API reports all of them identically as 'hush', the size is NOT automatically detectable. To distinguish them, you may ask the user to assign descriptive nicknames in the Lovense app (e.g. 'Hush S'/'Hush L')."
+      ]
+    },
+    "gemini": {
+      "type": "Vibrating nipple clamps - two individually controllable clamps with vibration motors (product page: de.lovense.com/app-controlled-vibrating-nipple-clamps-clit-clamps)",
+      "functions": {
+        "Vibrate": { "effect": "BOTH clamps simultaneously", "scale": [0, 20] },
+        "Vibrate1": { "effect": "Only the LEFT clamp (from the wearer's perspective)", "scale": [0, 20] },
+        "Vibrate2": { "effect": "Only the RIGHT clamp (from the wearer's perspective)", "scale": [0, 20] }
+      },
+      "notes": [
+        "GetToys only reports 'v', but Vibrate1/Vibrate2 work anyway (hidden functions).",
+        "Has a physical button but sends NO WebSocket events - the firmware does not support the event channel. ListenEvents(toy='gemini') never returns anything."
+      ]
+    }
+  }
+}
